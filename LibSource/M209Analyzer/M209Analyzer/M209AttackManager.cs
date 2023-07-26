@@ -2,6 +2,7 @@
 using M209AnalyzerLib.Enums;
 using M209AnalyzerLib.M209;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 
 namespace M209AnalyzerLib
@@ -150,6 +151,8 @@ namespace M209AnalyzerLib
 
         public long EvaluationCount = 0;
 
+        private List<LocalState> localStates = new List<LocalState>();
+
         private readonly object LOCK = new object();
 
         #endregion
@@ -204,16 +207,7 @@ namespace M209AnalyzerLib
         {
             lock (LOCK)
             {
-                OnProgressStatusChanged?.Invoke(this, new OnProgressStatusChangedEventArgs(attackType, phase, counter, targetValue, EvaluationCount, ElapsedTime));
-            }
-        }
-
-        public void NewKeyFound()
-        {
-            lock (LOCK)
-            {
-                EvaluationCount++;
-                Console.WriteLine($"EvaluationCount++  -> {EvaluationCount} [Thread {Thread.CurrentThread.ManagedThreadId}]");
+                OnProgressStatusChanged?.Invoke(this, new OnProgressStatusChangedEventArgs(attackType, phase, counter, targetValue, GetEvaluationCount(), ElapsedTime));
             }
         }
 
@@ -242,7 +236,8 @@ namespace M209AnalyzerLib
 
                     for (int i = 0; i < Threads; i++)
                     {
-                        ThreadPool.QueueUserWorkItem(new WaitCallback(o =>
+                        localStates.Add(new LocalState(i));
+                        ThreadPool.QueueUserWorkItem(new WaitCallback(delegate (object state)
                         {
                             try
                             {
@@ -250,13 +245,14 @@ namespace M209AnalyzerLib
                                 Key key = new Key();
                                 key.SetCipherText(CipherText);
 
+                                LocalState localState = (LocalState)state;
+
                                 if (SimulationKey != null)
                                 {
                                     key.setOriginalKey(SimulationKey);
-                                    key.setOriginalScore(Evaluate(EvalType.MONO, SimulationKey.CribArray, SimulationKey.CribArray));
+                                    key.setOriginalScore(Evaluate(EvalType.MONO, SimulationKey.CribArray, SimulationKey.CribArray, localState));
                                 }
 
-                                LocalState localState = new LocalState(i);
                                 CiphertextOnlyAttack.Solve(key, this, localState);
                             }
                             catch (Exception e)
@@ -265,19 +261,7 @@ namespace M209AnalyzerLib
                                 throw;
                             }
 
-                        }));
-                    }
-
-                    while (!ShouldStop)
-                    {
-                        try
-                        {
-                            countdownEvent.Wait(1000);
-                        }
-                        catch (Exception)
-                        {
-                            //do nothing
-                        }
+                        }), localStates[i]);
                     }
                 }
                 else
@@ -285,14 +269,15 @@ namespace M209AnalyzerLib
                     Key key = new Key();
                     key.SetCipherText(CipherText);
 
+                    localStates.Add(new LocalState(0));
+
                     if (SimulationKey != null)
                     {
                         key.setOriginalKey(SimulationKey);
-                        key.setOriginalScore(Evaluate(EvalType.MONO, SimulationKey.CribArray, SimulationKey.CribArray));
+                        key.setOriginalScore(Evaluate(EvalType.MONO, SimulationKey.CribArray, SimulationKey.CribArray, localStates[0]));
                     }
 
-                    LocalState localState = new LocalState(0);
-                    CiphertextOnlyAttack.Solve(key, this, localState);
+                    CiphertextOnlyAttack.Solve(key, this, localStates[0]);
                 }
             }
             else
@@ -366,47 +351,20 @@ namespace M209AnalyzerLib
             }
         }
 
-        public double Evaluate(EvalType evalType, int[] decryptedText, int[] crib)
+        public double Evaluate(EvalType evalType, int[] decryptedText, int[] crib, LocalState localState)
         {
-            NewKeyFound();
+            localState.EvaluationCount++;
             return Scoring.Evaluate(evalType, decryptedText, crib);
         }
 
-        public void Attack()
+        public long GetEvaluationCount()
         {
-            BestList.SetDiscardSamePlaintexts(false);
-            BestList.SetThrottle(true);
-
-            if (SimulationValue != 0)
+            long evaluationCount = 0;
+            foreach (var localState in localStates)
             {
-                ReportManager.simulation = true;
-                Key simulationKey = Simulation.CreateSimulationValues(this);
-                if (SimulationValue == 2)
-                {
-                    KnownPlaintextAttack.SolveMultithreaded(simulationKey, this);
-                }
-                else
-                {
-                    CiphertextOnlyAttack.SolveMultithreaded(simulationKey, this);
-                }
+                evaluationCount += localState.EvaluationCount;
             }
-            else
-            {
-                if (CipherText == null || CipherText.Length == 0)
-                {
-                    Console.WriteLine("\"Ciphertext or ciphertext file required when not in simulation mode\"\n");
-                    Console.Read();
-                    Environment.Exit(-1);
-                }
-                if (Crib != null && Crib.Length != 0)
-                {
-                    KnownPlaintextAttack.SolveMultithreaded(null, this);
-                }
-                else
-                {
-                    CiphertextOnlyAttack.SolveMultithreaded(null, this);
-                }
-            }
+            return evaluationCount;
         }
     }
 }

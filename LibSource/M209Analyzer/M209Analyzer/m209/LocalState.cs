@@ -13,9 +13,11 @@
         public bool SingleIteration { get; set; }
         public bool Quick { get; set; }
 
-        public LocalState(int threadNr)
+        public long EvaluationCount { get; set; }
+
+        public LocalState(int threadNo)
         {
-            ThreadNr = threadNr;
+            ThreadNr = threadNo;
         }
     }
 }

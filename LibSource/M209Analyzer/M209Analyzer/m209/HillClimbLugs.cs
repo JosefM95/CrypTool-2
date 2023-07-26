@@ -30,15 +30,15 @@ namespace M209AnalyzerLib.M209
             new int[] { 2, -2,},
         };
 
-        static double Eval(Key key, EvalType evalType, M209AttackManager attackManager)
+        static double Eval(Key key, EvalType evalType, M209AttackManager attackManager, LocalState localState)
         {
 
             if (evalType == EvalType.PINS_SA_CRIB)
             {
-                return SimulatedAnnealingPins.SA(key, EvalType.CRIB, 10, attackManager);
+                return SimulatedAnnealingPins.SA(key, EvalType.CRIB, 10, attackManager, localState);
             }
             key.UpdateDecryptionIfInvalid();
-            return attackManager.Evaluate(evalType, key.Decryption, key.CribArray);
+            return attackManager.Evaluate(evalType, key.Decryption, key.CribArray, localState);
         }
 
         public static double HillClimb(Key key, EvalType evalType, M209AttackManager attackManager, LocalState localState)
@@ -46,7 +46,7 @@ namespace M209AnalyzerLib.M209
 
             localState.BestTypeCount = key.Lugs.CreateTypeCountCopy();
             localState.BestPins = key.Pins.CreateCopy();
-            localState.BestScore = Eval(key, evalType, attackManager);
+            localState.BestScore = Eval(key, evalType, attackManager, localState);
 
             do
             {
@@ -110,7 +110,7 @@ namespace M209AnalyzerLib.M209
                             UndoChanges(localState.BestTypeCount, types, changes);
                             continue;
                         }
-                        newEval = Eval(key, evalType, attackManager);
+                        newEval = Eval(key, evalType, attackManager, localState);
                         if (newEval > localState.BestScore)
                         {
                             localState.Improved = true;
@@ -161,7 +161,7 @@ namespace M209AnalyzerLib.M209
                                     UndoChanges(localState.BestTypeCount, types, changes);
                                     continue;
                                 }
-                                newEval = Eval(key, evalType, attackManager);
+                                newEval = Eval(key, evalType, attackManager, localState);
 
                                 if (newEval > localState.BestScore)
                                 {
@@ -213,7 +213,7 @@ namespace M209AnalyzerLib.M209
                                 UndoChanges(localState.BestTypeCount, types, changes);
                                 continue;
                             }
-                            newEval = Eval(key, evalType, attackManager);
+                            newEval = Eval(key, evalType, attackManager, localState);
 
                             if (newEval > localState.BestScore)
                             {

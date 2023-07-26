@@ -1,5 +1,4 @@
-﻿using M209AnalyzerLib.Common;
-using M209AnalyzerLib.Enums;
+﻿using M209AnalyzerLib.Enums;
 using System;
 using System.Diagnostics;
 using System.Threading;
@@ -70,35 +69,6 @@ namespace M209AnalyzerLib.M209
             }
         }
 
-
-        public static void SolveMultithreaded(Key simulationKey, M209AttackManager attackManager)
-        {
-            Stats.Load(attackManager.ResourcePath, attackManager.Language, true);
-
-            ReportManager.setThreshold(EvalType.MONO);
-
-            if (attackManager.CipherText == null || string.IsNullOrEmpty(attackManager.CipherText))
-            {
-                attackManager.LogMessage("cipher is empty", "error");
-                Console.Read();
-                Environment.Exit(-1);
-            }
-
-            Runnables runnables = new Runnables();
-            for (int i = 0; i < attackManager.Threads; i++)
-            {
-                Key key = new Key();
-                key.SetCipherText(attackManager.CipherText);
-                if (simulationKey != null)
-                {
-                    key.setOriginalKey(simulationKey);
-                    key.setOriginalScore(attackManager.Evaluate(EvalType.MONO, simulationKey.CribArray, simulationKey.CribArray));
-                }
-
-                //runnables.AddRunnable(new Task(() => Solve(key, attackManager)));
-            }
-            runnables.Run();
-        }
         /// <summary>
         /// Phase of getting the best key of a boundle of randomly choosen keys.
         /// </summary>
@@ -117,7 +87,7 @@ namespace M209AnalyzerLib.M209
 
                 key.Lugs.Randomize();
 
-                double newEval = SimulatedAnnealingPins.SA(key, EvalType.MONO, 1, attackManager);
+                double newEval = SimulatedAnnealingPins.SA(key, EvalType.MONO, 1, attackManager, localState);
                 if (newEval > bestRandomScore)
                 {
                     bestRandomScore = newEval;
@@ -172,7 +142,7 @@ namespace M209AnalyzerLib.M209
                             continue;
                         }
 
-                        newEval = SimulatedAnnealingPins.SA(key, EvalType.MONO, 1, attackManager);
+                        newEval = SimulatedAnnealingPins.SA(key, EvalType.MONO, 1, attackManager, localState);
                         if (newEval > localState.BestScore)
                         {
                             localState.Improved = true;
@@ -225,7 +195,7 @@ namespace M209AnalyzerLib.M209
 
                         // Evaluate the decryption using Monograms.
                         key.UpdateDecryptionIfInvalid();
-                        newEval = attackManager.Evaluate(EvalType.MONO, key.Decryption, key.CribArray);
+                        newEval = attackManager.Evaluate(EvalType.MONO, key.Decryption, key.CribArray, localState);
                         if (newEval > localState.BestScore)
                         {
                             localState.Improved = true;
@@ -286,7 +256,7 @@ namespace M209AnalyzerLib.M209
                                 }
 
                                 key.UpdateDecryptionIfInvalid();
-                                newEval = attackManager.Evaluate(EvalType.MONO, key.Decryption, key.CribArray);
+                                newEval = attackManager.Evaluate(EvalType.MONO, key.Decryption, key.CribArray, localState);
 
                                 if (newEval > localState.BestScore)
                                 {
@@ -346,7 +316,7 @@ namespace M209AnalyzerLib.M209
                             }
 
                             key.UpdateDecryptionIfInvalid();
-                            newEval = attackManager.Evaluate(EvalType.MONO, key.Decryption, key.CribArray);
+                            newEval = attackManager.Evaluate(EvalType.MONO, key.Decryption, key.CribArray, localState);
                             if (newEval > localState.BestScore)
                             {
                                 localState.Improved = true;

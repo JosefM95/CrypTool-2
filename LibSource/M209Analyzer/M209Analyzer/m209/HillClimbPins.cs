@@ -10,7 +10,7 @@ namespace M209AnalyzerLib.M209
         {
 
             localState.BestScore = key.Eval(evalType);
-            localState.BestScore = attackManager.Evaluate(evalType, key.Decryption, key.CribArray);
+            localState.BestScore = attackManager.Evaluate(evalType, key.Decryption, key.CribArray, localState);
             localState.BestPins = key.Pins.CreateCopy();
 
             /*final*/
@@ -68,7 +68,7 @@ namespace M209AnalyzerLib.M209
                     }
                     key.UpdateDecryption(wheel, pin);
 
-                    newEval = attackManager.Evaluate(evalType, key.Decryption, key.CribArray);
+                    newEval = attackManager.Evaluate(evalType, key.Decryption, key.CribArray, localState);
                     if (newEval > localState.BestScore)
                     {
                         localState.BestScore = newEval;
@@ -108,7 +108,7 @@ namespace M209AnalyzerLib.M209
                     continue;
                 }
 
-                newEval = attackManager.Evaluate(evalType, key.Decryption, key.CribArray);
+                newEval = attackManager.Evaluate(evalType, key.Decryption, key.CribArray, localState);
                 if (newEval > localState.BestScore)
                 {
                     localState.BestScore = newEval;
@@ -149,7 +149,7 @@ namespace M209AnalyzerLib.M209
                         }
                         key.UpdateDecryption(wheel, pin1, pin2);
 
-                        newEval = attackManager.Evaluate(evalType, key.Decryption, key.CribArray);
+                        newEval = attackManager.Evaluate(evalType, key.Decryption, key.CribArray, localState);
 
                         if (newEval > localState.BestScore)
                         {
@@ -176,7 +176,7 @@ namespace M209AnalyzerLib.M209
             for (int v = 0; v <= 63; v++)
             {
                 key.Pins.InverseWheelBitmap(v);
-                double score = attackManager.Evaluate(evalType, key.Decryption, key.CribArray);
+                double score = attackManager.Evaluate(evalType, key.Decryption, key.CribArray, localState);
                 if (score > bestVscore)
                 {
                     bestVscore = score;

@@ -85,7 +85,7 @@ namespace M209AnalyzerLib.M209
         public int[] CipherArray { get; set; }
         public int[] CribArray { get; set; }
 
-        private Key _originalKey;
+        private Key _originalKey = null;
         public Key OriginalKey { get => _originalKey; }
         public double OriginalScore;
 

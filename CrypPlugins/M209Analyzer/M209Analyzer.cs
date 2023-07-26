@@ -416,7 +416,7 @@ namespace CrypTool.Plugins.M209Analyzer
 
         private void StartUpdateDisplayTimer()
         {
-            _timer = new System.Timers.Timer(1000);
+            _timer = new System.Timers.Timer(500);
             _timer.Elapsed += _timer_Elapsed;
             _timer.AutoReset = true;
             _timer.Enabled = true;
